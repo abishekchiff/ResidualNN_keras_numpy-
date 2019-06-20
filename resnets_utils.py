@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 import h5py
 import math
+import pickle
 
 def load_dataset():
     train_dataset = h5py.File('datasets/train_signs.h5', "r")
@@ -21,12 +22,32 @@ def load_dataset():
     return train_set_x_orig, train_set_y_orig, test_set_x_orig, test_set_y_orig, classes
 
 
+def generate_resnet_batches(dataset_files):
+
+    counter = 0
+    classes = 10
+
+    while True:
+        file_name = dataset_files[counter]
+
+        with open(file_name, 'rb') as fo:
+
+            dict_file = pickle.load(fo, encoding='bytes')
+            train_data = dict_file[b'data']
+            train_labels = dict_file[b'labels']
+            train_labels = np.transpose(convert_to_one_hot(np.array(train_labels),classes))
+            #print(train_labels.shape)
+            train_data = np.transpose(np.reshape(train_data,(3, 32,32,-1)), (3,1,2,0)).astype(np.float)/255.0
+            yield (train_data,train_labels)
+
+        counter +=1
+
 def random_mini_batches(X, Y, mini_batch_size = 64, seed = 0):
     """
     Creates a list of random minibatches from (X, Y)
     
     Arguments:
-    X -- input data, of shape (input size, number of examples) (m, Hi, Wi, Ci)
+    X -- input data, of shape (inp  ut size, number of examples) (m, Hi, Wi, Ci)
     Y -- true "label" vector (containing 0 if cat, 1 if non-cat), of shape (1, number of examples) (m, n_y)
     mini_batch_size - size of the mini-batches, integer
     seed -- this is only for the purpose of grading, so that you're "random minibatches are the same as ours.
